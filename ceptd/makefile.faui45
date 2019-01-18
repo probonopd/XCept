@@ -1,0 +1,172 @@
+# directories:
+OWNER= btx
+GROUP= i4isdn
+EXECMODE= 755
+
+BINDIR= /local/btx/bin#		directory for the executable ceptd
+MANDIR= /local/btx/man/man8# 	directory for the ceptds manpage 
+ETCDIR= /local/btx/etc#		directory for 'init file' and 'users file'
+
+# defaults for the ceptd :
+
+DEFAULTINITFILENAME= 	$(ETCDIR)/init.btx# 	modems default init file
+DEFAULTUSERSFILENAME= 	$(ETCDIR)/users.btx# 	file with allowed users
+DEFAULTLOGFILENAME= 	/local/btx/log/log.btx#	logfile for user online times
+DEFAULTMODEM= 		/dev/cuah3#		char. special file for modem
+DEFAULTSPEED= 		2400# 			modem baud rate
+DEFAULTSOCKETPORT= 	20005#			socket port for connections
+LOCKDIR=		/var/spool/locks#        lock dir for uucp-locks
+
+# define these flags in $(DEFS):
+
+# if your system has ISDN:
+# -DISDN
+# if using uucp LOCK files:
+# -DUSE_LOCK=\"$(LOCKDIR)\"		
+# allways define this for the modem to initalize right:
+# -DDEFAULTINITFILENAME=\"$(DEFAULTINITFILENAME)\"
+# if you want user online times to be logged in a file
+# -DDEFAULTLOGFILENAME=\"$(DEFAULTLOGFILENAME)\"
+# if you want to check users access rights:
+# -DDEFAULTUSERSFILENAME=\"$(DEFAULTUSERSFILENAME)\" 
+# allways define this:
+# -DDEFAULTMODEM=\"$(DEFAULTMODEM)\"
+# allways define this:
+# -DDEFAULTSPEED=$(DEFAULTSPEED)
+# allways define this:
+# -DDEFAULTSOCKETPORT=$(DEFAULTSOCKETPORT)
+
+
+DEFS=	-DDEFAULTSOCKETPORT=$(DEFAULTSOCKETPORT)\
+	-DISDN\
+	-DDEFAULTMODEM=\"$(DEFAULTMODEM)\"\
+	-DDEFAULTSPEED=$(DEFAULTSPEED)\
+ 	-DDEFAULTINITFILENAME=\"$(DEFAULTINITFILENAME)\"\
+	-DDEFAULTUSERSFILENAME=\"$(DEFAULTUSERSFILENAME)\"\
+	-DDEFAULTLOGFILENAME=\"$(DEFAULTLOGFILENAME)\"
+
+#	-DUSE_LOCK=\"$(LOCKDIR)\"\
+
+# the C-compiler:
+
+CC	= cc
+CCOPTS	= -O
+CCFLAGS = #-Wswitch -Wcomment  -Wshadow -Wpointer-arith -Wcast-qual\
+          #-Wtrigraphs# -Wunused
+
+##############################################################################
+
+all:	ceptd ceptd.8
+
+OBJS = ceptd.o level2.o modeminit.o socket.o term.o lex.yy.o isdn.o
+SRC  = ceptd.c level2.c modeminit.c socket.c term.c lex.yy.c isdn.c
+INC  = config.h cept.h ../xcept/protocol.h
+.c.o:		makefile config.h cept.h  ../xcept/protocol.h 
+		@echo
+		@echo '########################## $@ ########################'
+		$(CC) -c $(CCOPTS) $(CCFLAGS) $(DEFS) $*.c
+
+lex.yy.c:       lex_yy
+		@echo
+		@echo '########################## $@ ########################'
+		flex -s -i -p lex_yy
+		
+
+ceptd:	$(OBJS)
+		@echo
+		@echo '########################## $@ ########################'
+		$(CC) $(OBJS) -L. -lnsl -o ceptd
+		@echo "$@ finished"
+
+install:	ceptd ceptd.8
+	@echo
+	@echo '########################## $@ #################################'
+	strip ceptd
+	rm -f $(BINDIR)/ceptd
+	mv ceptd $(BINDIR)
+#	chown $(OWNER) $(BINDIR)/ceptd
+	chgrp $(GROUP) $(BINDIR)/ceptd
+	chmod $(EXECMODE) $(BINDIR)/ceptd
+	rm -f $(MANDIR)/ceptd.8
+	mv ceptd.8 $(MANDIR)
+#	chown $(OWNER) $(MANDIR)/ceptd.8
+	chgrp $(GROUP) $(MANDIR)/ceptd.8
+	chmod 644 $(MANDIR)/ceptd.8
+	@echo
+	@echo '**************************************************************'
+	@echo '**************************************************************'
+	@echo "------>>> Now do the following steps:"
+	@echo 
+	@echo '1)' add the following line to your /etc/inetd.conf file:
+	@echo "   btx stream tcp nowait $(OWNER)"\
+		$(BINDIR)/ceptd ceptd 
+	@echo 
+	@echo '2)' add the following line to your /etc/services file:
+	@echo "   btx    $(DEFAULTSOCKETPORT)/tcp    ceptd"
+	@echo
+	@echo '3)' copy the ../etc/users.btx file to $(DEFAULTUSERSFILENAME)\
+		  and edit it.
+	@echo
+	@echo '4)' copy the ../etc/init.btx file to $(DEFAULTINITFILENAME)\
+		  and edit it.
+	@echo
+	@echo '5)' read the ceptd manual.
+	@echo '***************************************************************'
+	@echo '***************************************************************'
+
+ceptd.8:	ceptd.8.template
+		sed -e 's|--- The permissions file.|$(DEFAULTUSERSFILENAME)|g'\
+		   -e 's|--- The initalization file.|$(DEFAULTINITFILENAME)|g'\
+		   -e 's|--- The log file.|$(DEFAULTLOGFILENAME)|g'\
+		   ceptd.8.template > ceptd.8
+
+
+clean:		
+		rm -f ceptd.8 *.o TAGS
+
+veryclean:      
+		rm -f ceptd.8 *.o TAGS ceptd lex.yy.c *.zoo
+
+TAGS:		$(SRC) $(INC)
+		etags -e *.[ch]
+
+
+depend:
+		makedepend -fmakefile.faui45 *.[ch]
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+ceptd.o: config.h cept.h ../xcept/protocol.h /usr/include/sys/types.h
+ceptd.o: /usr/include/sys/stdtypes.h /usr/include/sys/sysmacros.h
+ceptd.o: /usr/include/sys/wait.h /usr/include/stdlib.h
+ceptd.o: /usr/include/unistd.h /usr/include/signal.h
+ceptd.o: /usr/include/sys/signal.h /usr/include/vm/faultcode.h
+ceptd.o: /usr/include/stdio.h /usr/include/syslog.h /usr/include/string.h
+ceptd.o: /usr/include/fcntl.h /usr/include/sys/fcntlcom.h
+ceptd.o: /usr/include/sys/stat.h /usr/include/sys/time.h
+ceptd.o: /usr/include/sys/time.h /usr/include/sys/resource.h
+ceptd.o: /usr/include/sys/errno.h /usr/include/sys/file.h
+level2.o: config.h cept.h /usr/include/unistd.h /usr/include/sys/types.h
+level2.o: /usr/include/sys/stdtypes.h /usr/include/sys/sysmacros.h
+level2.o: /usr/include/signal.h /usr/include/sys/signal.h
+level2.o: /usr/include/vm/faultcode.h /usr/include/stdio.h
+level2.o: /usr/include/sys/time.h /usr/include/sys/time.h
+level2.o: /usr/include/syslog.h
+lex.yy.o: /usr/include/stdio.h
+modeminit.o: config.h cept.h ../xcept/protocol.h /usr/include/stdio.h
+modeminit.o: /usr/include/errno.h /usr/include/sys/errno.h
+modeminit.o: /usr/include/fcntl.h /usr/include/sys/fcntlcom.h
+modeminit.o: /usr/include/sys/stdtypes.h /usr/include/sys/stat.h
+modeminit.o: /usr/include/sys/types.h /usr/include/sys/sysmacros.h
+modeminit.o: /usr/include/signal.h /usr/include/sys/signal.h
+modeminit.o: /usr/include/vm/faultcode.h /usr/include/syslog.h
+modeminit.o: /usr/include/string.h /usr/include/sys/termio.h
+modeminit.o: /usr/include/sys/ioccom.h /usr/include/sys/termios.h
+modeminit.o: /usr/include/sys/ttydev.h /usr/include/sys/ttycom.h
+modeminit.o: /usr/include/sys/ttold.h
+socket.o: config.h /usr/include/sys/types.h /usr/include/sys/stdtypes.h
+socket.o: /usr/include/sys/sysmacros.h /usr/include/sys/socket.h
+socket.o: /usr/include/netinet/in.h /usr/include/netdb.h /usr/include/stdio.h
+term.o: config.h cept.h /usr/include/sys/termio.h /usr/include/sys/ioccom.h
+term.o: /usr/include/sys/termios.h /usr/include/sys/stdtypes.h
+term.o: /usr/include/sys/ttydev.h /usr/include/sys/ttycom.h

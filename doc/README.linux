@@ -1,0 +1,75 @@
+This is a quick hack to get XCept-2.0 running under linux
+Most of the work was to include the wright header files, to
+change some paths, enable creating of lockfiles, etc.
+There was a small bug in ./xcept/xfonts.c wich caused xcept
+to hang during output of graphic pages.
+
+I did not check ceptd in standalone mode. Further I am not
+able to test the isdn-interface with linux; I do not have
+one of the supported hardware.
+
+You need
+
+   - a linux system configured for networking, at least an 
+     inetd daemon running to accept calls to the loopback 
+     interface. Net-2 is recommended.
+   - libs-4.4.4
+   - XFREE86 (X11) 
+Include this from net-2 fdset.h:
+
+#define       FD_SET(n, p)    ((p)->fds_bits[0] |= (1<<(n)))
+#define       FD_CLR(n, p)    ((p)->fds_bits[0] &= ~(1<<(n)))
+#define       FD_ISSET(n, p)  ((p)->fds_bits[0] & (1<<(n)))
+#define FD_ZERO(p)    ((p)->fds_bits[0] = 0)
+
+
+
+What you have to do:
+
+   - read the original README in the base directory
+   - create the directory /usr/lib/cept 
+   - goto ./ceptd
+   - run make -f makefile.linux
+   - run make -f makefile.linux install (as root)
+   - follow the instructions at the end of the installation
+     process. Here they are...
+      1) add the following line to your /etc/inetd.conf file:
+         cept stream tcp nowait root /usr/etc/tcpd ceptd
+
+      2) add the following line to your /etc/services file:
+         cept    20005/tcp    ceptd
+ 
+      3) copy the ../etc/users.cept file to /usr/lib/cept/users.cept 
+         and edit it.
+         you need at least two entries like
+            @loopback
+	    username
+      4) copy the ../etc/init.cept file to /usr/lib/cept/init.cept 
+         and edit it.
+	 The modem has to be configured, so that there is no compression, 
+         error-correction like MNP5 / v42.bis
+
+      5) read the ceptd manual.
+
+   - goto ./xcept
+   - run make -f makefile.linux
+   - run make -f makefile.linux (as root)
+   - goto ./lib
+   - run make -f makefile.linux if you want to install the supplied 
+     script examples in /usr/lib/cept
+
+
+Note:
+ There are two environment variables XCEPTHOST and XCEPTSCRIPTS which override
+ the defaults (see the ./xcept/makefile.linux).
+ XCEPTHOST     specifies the host where xcept look for the ceptd-daemon.
+ XCEPTSCRIPTS  points to a colon separatet list of directories containing
+               scripts for xbtx.
+
+ You have to switch off online compression and error correction.
+	
+If there are more questions about the cept and linux feel free to contact me.
+
+Thomas Ziegler, 12/12/93
+zie@lte.e-technik.uni-erlangen.de
+

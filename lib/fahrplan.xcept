@@ -1,0 +1,129 @@
+# script fuer fahrplanauskunft
+# parameter:
+#            <abfahrtsbahnhof>  <zielbahnhof>  \
+#            <tag (tt)>  <monat (mm)>  <stunden (hh)>  <minuten (mm)>
+#
+# beispiel:  xbtx -2 -s fahrplan.scp Erlangen "Bremen Hbf" 05 08 15 00 filename
+#
+
+	if	argc=="7" goto start	# alle parameter in kommando zeile
+
+	input	argv_1:"Abfahrtsbahnhof:", "Erlangen"
+	input	argv_2:"Zielbahnhof:", ""
+	input	argv_3:"Tag (tt):", ""
+	input	argv_4:"Monat (mm):", ""
+	input	argv_5:"Stunde (hh):", ""
+	input	argv_6:"Minute (mm):", ""
+	input   argv_7:"Output (Filename):", ""
+	set outfile = argv_7
+
+	set ja = "19"
+	set nein = "2"
+	set frueher = "21"
+	set spaeter = "22"
+	set cr = "\n"
+	set stars = "**************************************************\n"
+	set minus = "--------------------------------------------------\n"
+
+start:
+#	connect			# verbindung zum BTX service
+#
+#	waitdct			# auf ende der leitseite 1 warten
+#	send 	"\#"   		# gastkennung
+#
+#	waitdct			# auf ende der leitseite 2 warten
+	send 	"\*258000\#"	# DB/fahrplan/reisezuege
+	waitdct
+	send "\#"
+	waitdct			# auf "Reisetag:" warten
+	send 	argv_3		# tag (tt)
+	info 	argv_3		# tag (tt)
+	waitdct
+	send 	argv_4		# monat (mm)
+	info 	argv_4		# monat (mm)
+
+	waitdct			# auf "Abfahrtsbahnhof:" warten
+	send 	argv_1
+	info 	argv_1
+	send 	"\#"
+
+	waitdct			# auf "Zielbahnhof:" warten
+	send 	argv_2
+	info 	argv_2
+	send 	"\#"
+
+	waitdct			# auf "Abfahrtszeit:" warten
+	send 	argv_5		# stunden (hh)
+	info 	argv_5		# stunden (hh)
+	waitdct
+	send 	argv_6		# minuten (mm)
+	info 	argv_6		# minuten (mm)
+	waitdct			# auf "Ankunftszeit:" warten
+	send 	"\#"
+	info "an h\n"
+	waitdct
+	send 	"\#"
+	info "an min \n"
+	waitdct 		# auf absenden ? warten
+	send ja
+	info ja
+	waitdct			# neue seite (Reiseverbindungen)
+	write stars to outfile
+	get 	a = "1", "3", "35", "4"
+	append a to outfile
+	append stars to outfile
+	get 	a = "4", "8", "40", "13"
+	append a to outfile
+	send spaeter		# spaeter
+	info spaeter
+	waitdct
+	get 	a = "4", "9", "40", "13"
+	append a to outfile
+	send frueher		# frueher
+	info frueher		# frueher
+	waitdct
+	send "11"		# erster Zug
+	info "11"		# erster Zug
+	set loop = "0"
+	append stars to outfile
+
+loop1:
+	waitdct
+	get a = "1", "8", "40", "15"
+l1:
+	get b = "33","16","38","16"
+	if b == "WEITER" goto weiter 
+	send spaeter		# spaeter
+	info spaeter		# spaeter
+	append a to outfile
+	append minus to outfile
+	inc loop
+	if loop == "10" goto break1
+	goto loop1	
+
+weiter: 
+	send "\#"
+	waitdct
+	get c = "1", "9", "40", "15"
+	strcat a,c
+	goto l1
+break1:
+	get a = "13","16","31","16"
+	send "31"
+	waitdct
+	get b = "30","18","39","20"
+	append "Fahrpreise:\n" to outfile
+	strcat b,cr
+	append b to outfile
+	set b = a
+	strcat b,cr
+	strcat b,stars
+	append b to outfile
+	send "\*9\#"
+#	quit
+
+ende:
+
+
+
+

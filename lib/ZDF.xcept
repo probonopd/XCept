@@ -1,0 +1,36 @@
+#XCEPT
+        connect                                 # verbindung zum BTX service
+
+        waitdct                                 # ende leitseite 1
+        send    "\#"                            # gastkennung
+
+        waitdct                                 # ende leitseite 2
+        get     tt = "5", "7", "6", "7"         # tag
+        get     mm = "8", "7", "9", "7"         # monat
+        send    "\*636004a\#"                   # ZDF/aktuelles programm
+
+        waitdct                                 # menue wochentage
+        set     z = "8"
+loop:                                           # ab zeile 10 in 2er-schritten
+        inc     z                               # das datum vergleichen,
+        inc     z                               # und menuepunkt 'type' merken
+        get     type = "40", z, "40", z
+        get     t = "13", z, "14", z
+
+        if      t==tt goto tag_ok
+        goto    loop
+tag_ok: get     m = "16", z, "17", z
+        if      m==mm goto found
+        goto    loop
+
+found:  send    type                            # 'heute' auswaehlen
+        waitdct                                 # tagesprogramm
+        get     tag = "1", "8", "40", "20"
+        send    "\#"
+        waitdct                                 # abendprogramm
+        get     abend = "1", "10", "40", "20"
+
+        info    "\n"
+        info    tag
+        info    abend
+

@@ -1,0 +1,10 @@
+	info	"SCRIPT start\n"
+	info	"windows off .....\n"
+	offx
+
+	sleep	"3"
+	info	"windows on......\n"
+	onx
+
+	info	"SCRIPT stop \n\n"
+

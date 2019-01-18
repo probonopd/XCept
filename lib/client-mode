@@ -1,0 +1,177 @@
+#XCEPT
+#
+# This script allows you to use xcept as a server
+# for a client program (e.g. advanced and automated
+# BTX-Processing by a perl script).
+# xcept may be run with and without X-display. xcept
+# accepts commands from stdin and responds with
+# output to stdout & stderr.
+# 
+
+	goto silent		# comment this line to debug interactively
+
+interactive:
+	set Iprompt	= "Cmd: "
+	set Idial	= "Dial number: "
+	set Idata	= "Data: "
+	set Ilx		= "Left X: "
+	set Irx		= "Right X: "
+	set Iuy		= "Upper Y: "
+	set Ily		= "Lower Y: "
+	set Idisplay	= "Display: "
+	set Iplayback   = "Playback log: "
+	set Idebug      = "Debug (on/off): "
+	set Iinput1	= "Input prompt: "
+	set Iinput2	= "Input default: "
+	set Iprefix     = ">"
+	goto nextcmd
+silent:
+	set Iprompt	= "XCEPT??????\n"
+	set Idial	= ""
+	set Idata	= ""
+	set Ilx		= ""
+	set Irx		= ""
+	set Iuy		= ""
+	set Ily		= ""
+	set Idisplay	= ""
+	set Iplayback   = ""
+	set Idebug      = ""
+	set Iinput1	= ""
+	set Iinput2	= ""
+	set Iprefix     = "XCEPT!!!!!!"
+
+nextcmd:
+	set cmd = "EOF"
+	input cmd:Iprompt,"*STDIN*"
+
+	if cmd==""		goto _quit
+	if cmd=="version"	goto _version
+	if cmd=="quit"		goto _quit
+	if cmd=="onx"		goto _onx
+	if cmd=="offx"		goto _offx
+	if cmd=="connect"	goto _connect
+	if cmd=="disconnect"	goto _disconnect
+	if cmd=="status"	goto _status
+	if cmd=="dial"		goto _dial
+	if cmd=="send"		goto _send
+	if cmd=="waitdct"	goto _waitdct
+	if cmd=="screen"	goto _screen
+	if cmd=="get"		goto _get
+	if cmd=="playback"	goto _playback
+	if cmd=="display"	goto _display
+	if cmd=="debug"		goto _debug
+	if cmd=="input"		goto _input
+	if cmd=="interactive"	goto interactive
+
+	info "XCEPT [client-mode]: Bad client command `"
+	info cmd
+	info "'.\n"
+	goto nextcmd
+
+_quit:
+	quit
+
+_version:
+	info Iprefix
+	info "1.0\n"
+	goto nextcmd
+
+_onx:
+	onx
+	goto nextcmd
+
+_offx:
+	offx
+	goto nextcmd
+
+_connect:
+        getstate stat
+        if stat=="CONNECTED" goto _connected
+        if stat=="ONLINE"    goto nextcmd
+        connect
+_connected:
+        waitdct
+        getstate stat
+        if stat=="ONLINE" goto nextcmd
+        info "Connect failed!\n"
+        disconnect
+        goto nextcmd
+
+_disconnect:
+	getstate stat
+	if stat=="DISCONNECTED" goto nextcmd
+	disconnect
+	goto nextcmd
+
+_status:
+	getstate stat
+	info Iprefix
+	info stat
+	info "\n"
+	goto nextcmd
+
+_dial:
+	input nbr:Idial,"*STDIN*"
+	send "\*"
+	send nbr
+	send "\#"
+	waitdct
+	goto nextcmd
+
+_send:
+	input data:Idata,"*STDIN*"
+	send data
+	goto nextcmd
+
+_waitdct:
+	waitdct
+	goto nextcmd
+
+_get:
+	input lx:Ilx, "*STDIN*"
+	input uy:Iuy, "*STDIN*"
+	input rx:Irx, "*STDIN*"
+	input ly:Ily, "*STDIN*"
+	set   l = uy
+	inc   ly
+_nextline_get:
+	if    l==ly goto nextcmd
+	get  line = lx, l, rx, l
+	info Iprefix
+	info line
+	info "\n"
+	inc  l
+	goto _nextline_get
+
+_screen:
+	set  l = "1"
+_nextline_screen:
+	if   l=="25" goto nextcmd
+	get  line = "1", l, "40", l
+	info Iprefix
+	info line
+	info "\n"
+	inc  l
+	goto _nextline_screen
+
+_playback:
+	input PlaybackLog:Iplayback, "*STDIN*"
+	playback PlaybackLog
+	goto nextcmd
+
+_display:
+	input DISPLAY:Idisplay, "*STDIN*"
+	goto nextcmd
+
+_debug:
+	input DEBUG:Idebug, "*STDIN*"
+	goto nextcmd
+
+_input:
+	input prmpt: Iinput1, "*STDIN*"
+	input dflt:  Iinput2, "*STDIN*"
+	input idata: prmpt,   dflt
+	info  Iprefix
+	info  idata
+	info  "\n"
+	goto  nextcmd

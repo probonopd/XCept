@@ -1,0 +1,318 @@
+.TH XCEPT 1 "24 September 1993"
+.SH NAME
+xcept \- a Bildschirmtext-decoder for the X\-Window system
+.SH SYNOPSIS
+.B xcept
+[\-h host] [\-p port] [\-l file] [\-t file] [\-r file] [\-c] [\-j count]
+[\-x] [\-X] [\-b] [\-2] [\-m] [\-S pathlist] [\-s file [parameter]] 
+.SH DESCRIPTION
+.I xcept
+is a Bildschirmtext terminal for the CEPT-service of the Deutsche Bundespost
+Telekom.
+.I xcept
+creates a window on the X-display and then connects to the
+.I ceptd.
+After the
+.I ceptd
+established the connection to the CEPT-exchange,
+.I xcept
+is ready to exchange data.
+.PP
+The following options are available:
+.PP
+.TP
+.B \-h host
+Connect to ceptd at host ``host''.
+.TP
+.B \-p port
+Use socket port number ``port'' for connection to ceptd.
+.TP
+.B \-l file
+Log CEPT-session to file ``file''.
+.TP
+.B \-t file
+Log debug text to file ``file''.
+.TP
+.B \-r file
+Replay CEPT-session from file ``file''. Stops at every page \-
+press any key to continue.
+.TP
+.B \-j count
+Jump over the first ``count'' pages (playback mode only).
+.TP
+.B \-c
+Connect to ceptd automatically on startup.
+.TP
+.B \-x
+Don't open X-window on startup (you have to run a script).
+.TP
+.B \-X
+Turn on synchronous mode for Xlib calls. Useful for debugging.
+.TP
+.B \-b
+Don't use Xserver's backingstore capability.
+.TP
+.B \-2
+Double size. Display each pixel as 2x2 pixels.
+.TP
+.B \-m
+Force monochrome display.
+.TP
+.B \-S pathes
+Specify a colon separated list of pathes where to look for .xcept script
+files.
+.TP
+.B \-s file [parameter]
+Run script ``file'' on startup with optional parameters. This has to be the
+last option. All following arguments are treated as script parameters
+(script variables
+.B argv_1, argv_2, ...
+).
+.PP
+In addition to all alphanumeric keyboard symbols and cursor keys the
+following special keyboard commands are valid:
+.PP
+.TP
+.B 'ESC'
+Exit from xcept immediately.
+.TP
+.B '^L'
+Redraw the CEPT window.
+.TP
+.B '^Q???'
+3-digit octal quote. Send the specified 8-bit character code.
+.TP
+.B '*'
+Send the CEPT initiator character.
+.TP
+.B '#', 'RETURN'
+Send the CEPT terminator character.
+.TP
+.B Modifier 1 Key (ALT) + [aAoOuUs]
+Send german 'a umlaut', 'A umlaut', 'o umlaut', 'O umlaut', 'u umlaut', 'U umlaut', and 'sharp s' character.
+.TP
+.B '^W' 
+Append current page as text to a file. The filename requester will be
+popped up only once.
+.PP
+.SH XCEPT SCRIPT LANGUAGE
+The language works on variables or string constants. Variable names can be of
+any length and consist of the characters [A-Z0-9a-z_]. String constants are
+enclosed in double quotes and may contain any ASCII characters.
+Script parameters are named
+.B argv_0
+through
+.B argv_n.
+.B argv_0
+is the name
+of the script file. The number of arguments can be found in the
+variable named
+.B argc.
+Any characters following a sharp sign (#) until the end of the line are
+treated as a comment.
+If the special script variable "DEBUG" is set to "on", each executed
+instruction is printed to stderr.
+.PP
+Special script string characters are:
+.TP
+.B \eb
+Write a <backspace> character.
+.TP
+.B \ef
+Write a <form-feed> character.
+.TP
+.B \en
+Write a <new-line> character.
+.TP
+.B \er
+Write a <carriage return> character.
+.TP
+.B \et
+Write a <tab> character.
+.TP
+.B \ev
+Write a <vertical tab> character.
+.TP
+.B \e\e
+Write a <backslash> character.
+.TP
+.B \enum
+Write an 8-bit character whose ASCII value is the 1-, 2-,
+or 3-digit octal number num.
+.TP
+.B \ea
+Write a german <a umlaut> character.
+.TP
+.B \eA
+Write a german <A umlaut> character.
+.TP
+.B \eo
+Write a german <o umlaut> character.
+.TP
+.B \eO
+Write a german <O umlaut> character.
+.TP
+.B \eu
+Write a german <u umlaut> character.
+.TP
+.B \eU
+Write a german <U umlaut> character.
+.TP
+.B \es
+Write a german <sharp s> character.
+.TP
+.B \e#
+Write the CEPT <terminator> character.
+.TP
+.B \e*
+Write the CEPT <initiator> character.
+.PP
+.SH SCRIPT COMMANDS
+.TP
+set <var A>=<var B|str B>
+Assign value of B to variable A.
+.TP
+write <var A|str A> to <var B|str B>
+Write contents of A to file B.
+.TP
+read <var A> from <var B|str B>
+Read contents of file B into variable A.
+.TP
+append <var A|str A> to <var B|str B>
+Append contents of A to file B.
+.TP
+strcat <var A> , <var B|str B>
+Concatenate B to A.
+.TP
+send <var A|str A>
+Send A to the CEPT-exchange.
+.TP
+get <var A>=<var B|str B>,<var C|str C>,<var D|str D>,
+<var E|str E>
+.br
+Get the contents of the screen rectangle specified by B, C, D, E into
+variable A. B, C specify the coordinates of the upper left corner
+and D, E the coordinates of the lower right corner of the rectangle.
+The coordinates are 1 based (x-range: 1-40, y-range:1-24).
+.TP
+waitdct
+Wait for completion of the next page or user input.
+.TP
+if <var A|str A> == <var B|str B> goto <label C>
+Conditional goto. If A is equal to B then continue execution at instruction
+labeled C. Label names are defined with a following colon (:), but referenced
+without one. (forever:  goto forever)
+.TP
+info <var A|str A>
+Write contents of A to <stdout>.
+.TP
+debug <var A|str A>
+Write contents of A to <stderr>.
+.TP
+goto <label A>
+Unconditional goto to label A.
+.TP
+inc <var A>
+Increment the numerical value of variable A.
+.TP
+dec <var A>
+Decrement the numerical value of variable A.
+.TP
+setpart <var A>=<var B|str B>,<var C|str C>,<var D|str D> 
+Copy the contents of B beginning from position C up to position D into
+variable A.
+.TP
+system <var A|str A>
+Execute shell command A.
+.TP
+sleep <var A|str A>
+Sleep A seconds.
+.TP
+onx
+Open the xcept X-window at the display specified in the script variable
+"DISPLAY" or at the default display (DISPLAY environment variable).
+.TP
+offx
+Close the xcept X-window.
+.TP
+input <var A> :  <var B|str B> , <var C|str C>
+Popup a requester and get user input into variable A.
+Prompt string is B and default answer
+string is C. If C is equal to "*NO ECHO*", the user input isn't
+echoed to the window (useful for password input).
+If C is equal to "*STDIN*", input is read from stdin and not from a
+requester (useful for piped input).
+.TP
+connect
+Connect to the ceptd.
+.TP
+disconnect
+Close the connection to the ceptd.
+.TP
+playback <var A|str A>
+Start session playback from file A.
+.TP
+ppmsave <var A|str A>
+Save current CEPT page as PPM image to file A.
+.TP
+getstate <var A>
+Get the current terminal state into variable A. Possible states are
+"CONNECTED", "ONLINE", "DISCONNECTED" or "PLAYBACK".
+.TP
+quit
+Exit from xcept immediately.
+
+.SH EXAMPLE
+This is a sample script (login.scp) which logs into CEPT as guest and selects
+page 50000.
+.PP
+Start with: xcept -s login.scp 50000
+.PP
+.RS +.8i
+connect
+.br
+waitdct                   # wait for login page
+.br
+send       "\e#"           # accept guest id
+.br
+waitdct
+.br
+set        page = "\e*"
+.br
+strcat     page, argv_1
+.br
+strcat     page, "\e#"
+.br
+send       page           # '*50000#'
+.br
+waitdct
+.RE
+.SH ENVIRONMENT
+.PP
+.TP
+XCEPTSCRIPTS 
+overwrites the default search path for script files.
+(e.g. ~/.xcept:/local/lib/xcept)
+.TP
+XCEPTHOST 
+overwrites the default hostname of server host
+(e.g. myhost.informatik.uni-erlangen.de)
+.TP 
+For defaults type xcept -h.
+.RE
+.SH "SEE ALSO"
+ceptd(8)
+.br
+"Functional Specification for BTX-Terminals", DBP Telekom
+
+.SH AUTHORS
+.TP
+Arno Augustin, University of Erlangen-Nuremberg,
+(aoaugust@cip.informatik.uni-erlangen.de)
+.TP
+Frank Hoering, University of Erlangen-Nuremberg,
+(fkhoerin@cip.informatik.uni-erlangen.de)
+
+.SH BUGS
+Not all features are documented.
+For further information read the source code.

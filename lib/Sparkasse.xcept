@@ -1,0 +1,62 @@
+#XCEPT
+#
+# script fuer kontostand + umsaetze sparkasse erlangen
+#
+
+        if      argc=="2" goto pin_ok           # PIN in kommandozeile
+
+        input   argv_1:"5-stellige PIN eingeben:", "*NO ECHO*"
+
+pin_ok:
+        getstate stat
+        if      stat=="CONNECTED" goto online
+        if      stat=="PLAYBACK"  goto online
+
+	input   XX:"XBTX status isn't ONLINE", "--please ignore input--"
+	goto ende
+
+online:
+        send    "\*95852022a\#"                 # sparkasse ER / dialog 1 PIN
+
+        waitdct                                 # auf "Kontonummer:" warten
+        send    "12345678\#"                     # girokonto
+        waitdct                                 # auf "PIN 1:" warten
+        send    argv_1
+
+        waitdct                                 # auf "Auswahl:" warten
+        send    "3"                             # 3=kontoauskunft
+
+        waitdct                                 # "Absenden ? Ja / Nein"
+        send    "19"                            # Ja !
+
+        waitdct                                 # ende von kontoauskunftseite
+        get     konto = "1",  "7", "40",  "8"   # kontonummer, name
+        get     stand = "1", "10", "40", "10"   # kontostand
+        send    "1"                             # --> umsatzauskunft
+
+        waitdct                                 # umsatzauskunft
+        get     titel =  "1", "7", "40",  "7"   # ueberschrift (Datum...DM)
+        get     umsatz = "1", "8", "40", "19"   # umsaetze
+
+        info    "\n\n"                          # ausgabe
+        info    konto
+        info    "\n"
+        info    titel
+        info    umsatz
+        info    "\n"
+        info    stand
+        info    "\n"
+
+        send    "9"                             # --> menue
+
+        waitdct                                 # "Umsatzauskunft"
+        send    "\#"                            # weiter...
+
+        waitdct                                 # "dialog mit 1 PIN"
+        send    "0"                             # --> beenden
+
+#       waitdct
+
+#       quit                                    # exit from XBTX
+
+ende:

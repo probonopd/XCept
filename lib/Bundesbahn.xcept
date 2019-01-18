@@ -1,0 +1,61 @@
+#XCEPT
+# script fuer fahrplanauskunft
+# parameter:
+#            <abfahrtsbahnhof>  <zielbahnhof>  \
+#            <tag (tt)>  <monat (mm)>  <stunden (hh)>  <minuten (mm)>
+#
+# beispiel:  xbtx -2 -s fahrplan.scp Erlangen "Bremen Hbf" 05 08 15 00
+#
+
+	if	argc=="7" goto start	# alle parameter in kommando zeile
+
+	input	argv_1:"Abfahrtsbahnhof:", "Erlangen"
+	input	argv_2:"Zielbahnhof:", ""
+	input	argv_3:"Tag (tt):", ""
+	input	argv_4:"Monat (mm):", ""
+	input	argv_5:"Stunde (hh):", ""
+	input	argv_6:"Minute (mm):", ""
+
+start:
+	connect			# verbindung zum BTX service
+
+	waitdct			# auf ende der leitseite 1 warten
+	send 	"\#"   		# gastkennung
+
+	waitdct			# auf ende der leitseite 2 warten
+	send 	"\*258000a\#"	# DB/fahrplan/reisezuege
+
+	waitdct			# auf "Reisetag:" warten
+	send 	argv_3		# tag (tt)
+	waitdct
+	send 	argv_4		# monat (mm)
+
+	waitdct			# auf "Abfahrtsbahnhof:" warten
+	send 	argv_1
+	send 	"\#"
+
+	waitdct			# auf "Zielbahnhof:" warten
+	send 	argv_2
+	send 	"\#"
+
+	waitdct			# auf "Abfahrtszeit:" warten
+	send 	argv_5		# stunden (hh)
+	waitdct
+	send 	argv_6		# minuten (mm)
+
+	waitdct			# auf "Ankunftszeit:" warten
+	send 	"\#"
+	waitdct
+	send 	"\#"
+
+	waitdct			# neue seite (Reiseverbindungen)
+	get 	a = "4", "8", "40", "13"
+	info 	a
+
+	quit
+
+ende:
+
+
+
+

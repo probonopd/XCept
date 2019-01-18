@@ -1,0 +1,10 @@
+#
+#	Makefile for scripts
+#	essentially the install command
+SCRIPTS = ascii Bundesbahn DeutscheBank-Kontoauszug on-off popup Spasskasse \
+          Sparkasse ZDF client-mode xcept.pl ZDF.pl
+DEST    = /usr/local/btx/lib
+
+install:
+		install -c -m 0664 $(SCRIPTS) $(DEST)
+		chmod 755 $(DEST)/ZDF.pl

@@ -1,0 +1,5 @@
+# init file for isdn:
+
+openisdn "00500009111910"  "/dev/isdn"
+
+

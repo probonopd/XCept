@@ -1,0 +1,18 @@
+#XCEPT
+#
+# xbtx script fuer reine Textdarstellung (ohne Windowsystem)
+#    Aufruf mit: $ xbtx -x -s ascii.xbtx
+#
+
+		connect
+
+forever:	waitdct					# warten
+		get	screen = "1", "1", "40", "24"
+		info	"\033\133\110\033\133\112"	# clear-home
+		info	screen				# darstellen
+		input	eingabe:"prompt> ", ""
+		if	eingabe == "quit" goto ende
+		send	eingabe
+		goto	forever
+ende:		quit
+

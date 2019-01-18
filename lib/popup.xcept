@@ -1,0 +1,17 @@
+	info	"START\n"
+	waitdct
+	info	"1st page ok\n"
+
+	waitdct
+	info	"2nd page ok\n"
+
+	waitdct
+	info	"3rd page ok\n"
+
+	get	a = "1", "1", "40", "24"
+	info	a
+	waitdct
+	info	"page 4 ok\n"
+	waitdct
+	info	"now turning on windows..\n"
+	onx

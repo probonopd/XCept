@@ -1,0 +1,55 @@
+# init file is called on connection to server
+#############################################################################
+# keywords:
+#
+# opendevice 		<speed> 	<"devicename"> 
+# baud 			<speed>
+# sleep			<time>
+# wait			<time>
+# send 			<"string">
+# hangupstring 		<"string">
+# connectstring		<"string">
+# nodialtonestring 	<"string">
+# nocarrierstring 	<"string">
+# busystring 		<"string">
+#############################################################################
+# opendevice	opens devicename with speed; this must be the first entry !
+# baud		sets baudrate
+# sleep		sleeps time 1/10 seconds
+# wait		waits time seconds for string; if in time secs this string
+#		is not received the server closes the connection
+# send		sends a string to the device
+# hangupstring	is the string to be sent to the device (modem) on hangup
+#
+# <"string">: 
+# '~' = sleep 1 sec
+# '\' = quote character    e.g. \^ \~ \\
+# '^' = control character  e.g. ^M = return  ^J = line_feed
+#############################################################################
+opendevice	38400	"/dev/ttyF00"
+hangupstring		"~+++~ATH0^M"
+connectstring		"CONNECT 2400"
+nodialtonestring 	"NO DIALTONE^M"
+nocarrierstring 	"NO CARRIER^M"
+busystring 		"BUSY^M"
+
+
+send            "at^M"
+sleep 10
+send            "ATZ^M"        	# reset
+sleep 20
+send 		"AT&D2^M"	# hangup when DTR off
+sleep 4
+send 		"ATQ0^M"	#
+sleep 4
+send		"ATV1^M"
+sleep 4
+send 		"AT^M"	# dial-in/out modem
+sleep 4
+send 		"ATS21=24^M"	# CD from phone line
+sleep 4
+send 		"ATS2=255^M"	# no +++ allowed
+sleep 4
+send 		"~ATDT01300190^M"
+
+wait		100	# wait 100 sec for BUSY, CONNECT, NO CARRIER, ....

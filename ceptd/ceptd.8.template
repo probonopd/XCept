@@ -1,0 +1,182 @@
+.TH CEPTD 8 "24 September 1993"
+.SH NAME
+ceptd \- Server for the xcept CEPT decoder
+.SH SYNOPSIS
+.B ceptd
+.nh
+[\fB\-f\fP filename] [\fB\-p\fP port] [\fB\-d\fP] [\fB\-s\fP filename] 
+[\fB\-u\fP filename]
+.hy
+.SH DESCRIPTION
+.I ceptd 
+is the server process for the 
+.I xcept 
+CEPT decoder. The server uses the TCP protocol and listens
+at the port specified in the command line or in the ``ceptd'' service
+specification; see services(5). 
+.I ceptd 
+can be started from the \fIinetd\fR. If not started from inetd,
+\fIceptd\fR will deal with connection request forking on connects.
+If the standard input of ceptd 
+is not a tty, ceptd assumes being started from inetd.
+.PP
+.I Available options:
+.PP
+.TP
+.B -p port
+Listen for connections on port with number ``port''. This option is
+only available if ceptd is not started from inetd.
+.TP
+.B -f filename
+Use file with filename ``filename'' as the modem initialization file.
+Executed when xcept establishes a connection.
+.TP
+.B -s filename
+Use file with filename ``filename'' as the user access file. Access
+permissions are checked at every connection.
+.TP
+.B -u filename
+Use file with filename ``filename'' as the user log file. This file
+contains the user online times and will be updated after every session.
+.TP
+.B -d 
+Write additional debug output to the \fIsyslog\fR 
+or to the \fIstandard error\fR. If ceptd is started from inetd,
+error and debug output is written to the syslog, otherwise it is
+written to stderr.
+.PP
+The default values for the `initialization file', for the `permissions
+file', for the `log file' and the socket port number are displayed
+when ceptd prints out its usage information.
+.PP
+.SH INITIALIZATION FILE:
+.PP
+This file contains commands to initialize the server at connection setup.
+Available commands are:
+.TP
+.B opendevice <speed> <"devicename"> 
+Open the modem device with baud rate ``speed'' and device name
+``devicename''. This has to be the first entry in the file.
+.br
+Example:   opendevice 19200 "/dev/tty01"
+.TP
+.B baud <speed>
+Switch baud rate to speed ``speed''
+.br
+Example:   baud 2400     # switch to 2400 baud
+.TP
+.B sleep <time>
+Sleep for the given time ``time''. The time value is in 1/10 of a second.
+.br
+Example:   sleep 40      # sleep 4 sec.
+.TP
+.B wait <time>
+Wait ``time'' seconds for the answer to be received
+from the modem. If the initialized string doesn't match in the given time, the
+connection to the client is closed. 
+.br
+Example:   wait 40 # timeout 40 sec
+.TP
+.B send <"string">
+Send a given string to the modem.
+.br
+Example:   send "ATDP 091119304^M"   # dial 091119304
+.TP
+.B hangupstring  <"string">
+Set the hangup string of the modem. 
+.br
+Example:   hangupstring "~+++~ATH0"
+.TP
+.B connectstring  <"string">
+Set the connect string of the modem. 
+.br
+Example:   connectstring "CONNECT 2400^M"
+.TP
+.B nodialtonestring  <"string">
+Set the no dialtone string of the modem. 
+.br
+Example:   nodialtonestring "NO DIALTONE^M"
+.TP
+.B nocarrierstring  <"string">
+Set the no carrier string of the modem. 
+.br
+Example:   nocarrierstring "NO CARRIER^M"
+.TP
+.B busystring  <"string">
+Set the busy string of the modem. 
+.br
+Example:   busystring "BUSY^M"
+.TP
+.B isdn  <"string1"> <"string2">
+Only if your system supports isdn networking.  This command connects
+to isdn port '"string1"' using device '"string2"'. 
+If you use this command it should be the only command
+in the initialization file.
+.br
+Example:   isdn "00500000499111910" "/dev/isdn"
+.PP
+.I Special characters in the strings are:
+.TP
+.B ~ 
+sleep 1 sec (no output is produced)
+.TP
+.B \e 
+quote character    e.g. \e^ \e~ \e\e
+.TP
+.B ^
+control character  e.g. ^M = return  ^J = line_feed
+.PP
+.SH PERMISSIONS FILE:
+.PP 
+This file contains all users who are allowed to use the ceptd.
+The following entries are possible:
+.PP
+           a comment:              \fB# foo bla foo\fR
+.br
+           a user entry:           \fBusername\fR
+.br
+           a host entry:           \fB@hostname\fR
+.br
+           a user/host entry:      \fBusername@hostname\fR       
+.PP
+The user 
+.B username@machine 
+gets permission to use the ceptd if the file
+contains one of the following:
+.PP
+.B username@machine    
+.PP
+OR
+.PP
+.B @machine
+.br
+.B username      
+.PP
+A user gets access if he is mentioned explicitly with his machine
+(user/host entry) OR if his machine is among the allowed hosts (host entry)
+and he is among the allowed users (user entry).
+.PP
+.SH FILES
+--- The permissions file.
+.br
+--- The initalization file.
+.br
+--- The log file.
+.br
+
+.SH AUTHORS
+.TP
+Arno Augustin, University of Erlangen-Nuremberg,
+(aoaugust@cip.informatik.uni-erlangen.de)
+.TP
+Frank Hoering, University of Erlangen-Nuremberg,
+(fkhoerin@cip.informatik.uni-erlangen.de)
+
+.SH BUGS
+Although some attempts at enforcing access permissions are done,
+ceptd can still be fooled ...
+
+.SH SEE ALSO
+.nf
+xcept(1), inetd(8), syslogd(8), services(5)
+.fi

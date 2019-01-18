@@ -1,0 +1,137 @@
+#XCEPT
+# Kontoauszug Deutsche Bank
+#
+# db-ka [PIN | pin [TT [MM] ] ]
+#
+
+	set	skaf="$HOME/btx/db-ka.output"	# Output-File
+	set	kaf="~/btx/db-ka.output"
+
+jumper:
+        if      argc=="1" goto reget_PIN        # alles fehlt
+	if	argc=="2" goto need_daymonth	# PIN da, Rest fehlt
+	if	argc=="3" goto need_month	# PIN, Tag da, Monat fehlt
+	goto    got_all                         # Alles da
+
+# PIN eingeben, "*NO ECHO*" bewirkt verdeckte Eingabe
+reget_PIN:
+	input	argv_1:"5-stellige PIN eingeben:", "*NO ECHO*"
+        inc     argc
+	goto    jumper
+
+# PIN aus dem PIN cache lesen, koennte man eventuell noch verschluesseln ?
+read_PIN:
+	read	argv_1 from "~/.my.pin"	# PIN aus PIN cache lesen
+        inc     argc
+	goto    jumper
+
+# PIN ist gegeben, Tag und Monat fehlen
+need_daymonth:
+	input	argv_2:"Tag:", "01"
+        inc     argc
+
+# PIN, Tag gegeben, Monat fehlt
+need_month:
+	input	argv_3:"Monat:", "01"
+        inc argc
+
+# Alle Paras vorhanden, PIN verdeckt oder aus dem Cache?
+got_all:
+
+	if 	argv_1=="pin" goto read_PIN
+	if 	argv_1=="PIN" goto reget_PIN
+
+	getstate stat
+	if	stat=="ONLINE"    goto online
+	if	stat=="PLAYBACK"  goto online
+	input   XX:"XBTX status isn't ONLINE", "--please ignore input--"
+	goto ende
+
+online:
+	send 	"\*600001119\#"			# Deutsche Bank
+                                                # Kontoauszug --- Detailiert
+
+	waitdct					# auf "Filiale:" warten
+	send 	"226"				# Filial-Nummer
+	waitdct
+	send	"7619133"			# Stammkonto-Nummer
+	waitdct
+	send	"00"				# Unterkonto
+	waitdct					# auf PIN 1 warten
+	send	argv_1				# PIN 1 eingeben
+	waitdct					# auf PIN 2 warten
+	send	"\#"				# PIN 2 ueberspringen
+	waitdct					# auf Datum warten
+	send	argv_2				# Datum (Tag) eingeben
+	waitdct
+	send	argv_3
+
+	waitdct
+	send	"19"				# 19 == Ja schicken
+
+	waitdct					# Auf Ende der ersten 
+						# Kontoseite warten
+
+        # Kontoinhaber, Kontonummer, alten Saldo und Umsatz holen
+	get	inhaber = "5", "3", "40", "3"	# Spalte 5, Zeile 3 bis
+						# Spalte 40, Zeile 3
+	get	konto = "5", "4", "14", "4"
+        get     saldo_alt = "1", "7", "40", "7" # Alter Saldo
+	get	umsatz = "1", "8", "40", "22"	# Umsatz-Fenster
+
+	# Ausgabe timestamp
+	set	ts=""
+	strcat	ts, "rm -f "
+	strcat	ts, skaf
+	system	ts
+	set 	ts=""
+	strcat	ts, "date '+%a, %d.%m.%y%t%T' >> "
+	strcat	ts, skaf
+	system	ts
+
+	# Ausgabe Kontoinhaber mit eindeutigem Tag fuer Perl
+		
+	append	"INHABER:\t" to kaf
+	append	inhaber to kaf
+        append 	"\n" to kaf
+
+	# Ausgabe Kontonummer
+	append	"KONTO:\t" to kaf
+	append	konto to kaf
+        append	"\n" to kaf
+
+	# Ausgabe Alter Saldo
+        append	saldo_alt to kaf
+        append	"\n" to kaf
+
+	# Ausgabe 1. Umsatz
+	append	"UMSATZ --- BEGIN\n" to kaf
+	append	umsatz to kaf
+
+	# Weitere Umsaetze?
+	get	disc = "1", "24", "10", "24"	# Verbindung beendet?
+
+	if disc=="Verbindung" goto umsatz_ende
+
+get_umsatz:
+	send	"\#"
+	waitdct
+	get	umsatz = "1", "7", "40", "22"	# Umsatz-Fenster
+	append	"\n" to kaf
+	append	umsatz to kaf
+
+	# Weitere Umsaetze?
+	get	more = "22", "23", "27", "23"	# weitere Umsaetze?
+
+	if more=="weiter" goto get_umsatz
+
+umsatz_ende:
+	append "UMSATZ --- END\n" to kaf
+
+	send	"\*0\#"				# Leitseite
+
+	waitdct
+
+ende:
+	quit					# exit from XBTX
+
